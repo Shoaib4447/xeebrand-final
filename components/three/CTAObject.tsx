@@ -34,7 +34,7 @@
 "use client";
 
 import { useRef, useEffect, useCallback } from "react";
-import { useFrame } from "@react-three/fiber";
+import { useAnimationTick } from "./AnimatedObject";
 import * as THREE from "three";
 import { useSpring } from "@react-spring/three";
 import { useTier, useReducedMotion } from "@/lib/store";
@@ -92,8 +92,8 @@ export function CTAObject({ onActivate }: CTAObjectProps) {
     return () => window.removeEventListener("pointermove", onPointerMove);
   }, [reducedMotion]);
 
-  // ── Per-frame lerp — "drag" spring feel + apply scale spring ───────────────
-  useFrame(() => {
+  // ── P1: magnetic position + click scale writes ───────────────────────────
+  useAnimationTick(() => {
     if (!groupRef.current) return;
     // Apply click-animation scale via spring .get() — never direct assignment
     groupRef.current.scale.setScalar(scale.get());
@@ -103,7 +103,7 @@ export function CTAObject({ onActivate }: CTAObjectProps) {
     magCurrent.current.y += (magTarget.current.y - magCurrent.current.y) * LERP;
     groupRef.current.position.x = magCurrent.current.x;
     groupRef.current.position.y = magCurrent.current.y;
-  });
+  }, 1);
 
   // ── Click sequence ──────────────────────────────────────────────────────────
   const handleActivate = useCallback(() => {

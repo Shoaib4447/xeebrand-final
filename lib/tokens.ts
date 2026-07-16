@@ -120,19 +120,19 @@ export const durations = {
 // ─── Scene camera keyframes — matches Cinematic Scene Design doc §4 ──────────
 export const cameraKeyframes = {
   /** Scene 1 — opening hold (hero) */
-  scene1: { position: [0, 0, 6],     fov: 35 },
+  scene1: { position: [0, 0, 6]     as [number, number, number], fov: 35 },
   /** Scene 2 — pull back, reveal proof metrics */
-  scene2: { position: [0, 0.4, 9],   fov: 35 },
+  scene2: { position: [0, 0.4, 9]   as [number, number, number], fov: 35 },
   /** Scene 3 — lateral tracking past service panels */
-  scene3: { position: [2.2, -0.6, 7], fov: 35 },
+  scene3: { position: [2.2, -0.6, 7] as [number, number, number], fov: 35 },
   /** Scene 4 — locked for process disassembly */
-  scene4: { position: [0, 0, 7],     fov: 35 },
+  scene4: { position: [0, 0, 5]     as [number, number, number], fov: 35 },
   /** Scene 5 — slow push-in, case studies */
-  scene5: { position: [0, 0, 5.5],   fov: 35 },
+  scene5: { position: [0, 0, 4]     as [number, number, number], fov: 35 },
   /** Scene 6 — still, warm, testimonial */
-  scene6: { position: [0, 0, 6],     fov: 35 },
+  scene6: { position: [0, 0, 5]     as [number, number, number], fov: 35 },
   /** Scene 7 — final push, brightest, CTA */
-  scene7: { position: [0, 0, 5],     fov: 35 },
+  scene7: { position: [0, 0, 4.5]   as [number, number, number], fov: 35 },
 } as const;
 
 // ─── Particle budgets per scene, per Cinematic spec §4 ───────────────────────

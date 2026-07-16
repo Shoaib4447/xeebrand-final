@@ -18,9 +18,9 @@
 "use client";
 
 import { useRef, useEffect, useMemo } from "react";
-import { useFrame } from "@react-three/fiber";
 import { RoundedBox } from "@react-three/drei";
 import * as THREE from "three";
+import { useAnimationTick } from "./AnimatedObject";
 import { useTier, useReducedMotion } from "@/lib/store";
 import { gradientStops, materialSpec, materialSpecTierB } from "@/lib/tokens";
 
@@ -64,18 +64,12 @@ export function XMark({
   const mat2 = useMemo(() => buildMaterial(tier, 4), [tier]); // cool (blue)
   useEffect(() => () => { mat1?.dispose(); mat2?.dispose(); }, [mat1, mat2]);
 
-  // ── Per-frame animation ────────────────────────────────────────────────────
-  useFrame((_, delta) => {
-    const group = groupRef.current;
-    const b1g   = bar1GroupRef.current;
-    const b2g   = bar2GroupRef.current;
-    if (!group) return;
-
+  // ── P0: spring / lerp math — runs before any mesh writes ───────────────────
+  useAnimationTick((_, delta) => {
     clock.current += delta;
 
-    // Entrance scale: lerp 0→1 (≈560ms at 60fps, instant under reduced-motion)
+    // Entrance scale lerp: 0→1 (instant under reduced-motion)
     scaleVal.current = Math.min(1, scaleVal.current + delta * (reducedMotion ? 20 : 1.8));
-    group.scale.setScalar(scaleVal.current);   // scale.setScalar — correct Three.js API
 
     if (reducedMotion) return;
 
@@ -83,7 +77,7 @@ export function XMark({
     const idleY = Math.sin(clock.current / 8)      * 0.05;
     const idleX = Math.sin(clock.current / 10 + 1) * 0.025;
 
-    // 2. Pointer parallax (hero/cta only)
+    // 2. Pointer parallax targets
     const targetY = (mode === "hero" || mode === "cta")
       ? pointerNorm.x * 0.15 + idleY
       : idleY;
@@ -91,17 +85,15 @@ export function XMark({
       ? -pointerNorm.y * 0.10 + idleX
       : idleX;
 
-    rotY.current += (targetY - rotY.current) * 0.05; // lerp ≈280ms settle
+    rotY.current += (targetY - rotY.current) * 0.05;
     rotX.current += (targetX - rotX.current) * 0.05;
-    group.rotation.y = rotY.current;
-    group.rotation.x = rotX.current;
 
-    // 6. Process disassembly — springs toward scroll-driven displacement
-    if (mode === "process" && b1g && b2g) {
+    // 6. Process disassembly lerp targets
+    if (mode === "process") {
       const t = Math.min(scrollProgress * 2, 1);
       const tx1 = { x: -1.2 * t, y:  1.0 * t, z:  0.3 * t };
       const tx2 = { x:  1.2 * t, y: -1.0 * t, z: -0.3 * t };
-      const L   = 0.08; // drag spring feel
+      const L   = 0.08;
 
       bar1Pos.current.x += (tx1.x - bar1Pos.current.x) * L;
       bar1Pos.current.y += (tx1.y - bar1Pos.current.y) * L;
@@ -109,12 +101,27 @@ export function XMark({
       bar2Pos.current.x += (tx2.x - bar2Pos.current.x) * L;
       bar2Pos.current.y += (tx2.y - bar2Pos.current.y) * L;
       bar2Pos.current.z += (tx2.z - bar2Pos.current.z) * L;
+    }
+  }, 0);
 
-      // position.set() — the correct Three.js API; direct assignment is read-only
+  // ── P1: Three.js object writes — reads settled spring values from P0 ─────────
+  useAnimationTick(() => {
+    const group = groupRef.current;
+    const b1g   = bar1GroupRef.current;
+    const b2g   = bar2GroupRef.current;
+    if (!group) return;
+
+    group.scale.setScalar(scaleVal.current);
+    if (reducedMotion) return;
+
+    group.rotation.y = rotY.current;
+    group.rotation.x = rotX.current;
+
+    if (mode === "process" && b1g && b2g) {
       b1g.position.set(bar1Pos.current.x, bar1Pos.current.y, bar1Pos.current.z);
       b2g.position.set(bar2Pos.current.x, bar2Pos.current.y, bar2Pos.current.z);
     }
-  });
+  }, 1);
 
   if (!tier || tier === "C" || !mat1 || !mat2) return null;
 

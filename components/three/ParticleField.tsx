@@ -18,8 +18,8 @@
 
 "use client";
 
-import { useRef, useMemo, useEffect, useState } from "react";
-import { useFrame } from "@react-three/fiber";
+import { useRef, useMemo, useEffect, useLayoutEffect, useState } from "react";
+import { useAnimationTick } from "./AnimatedObject";
 import * as THREE from "three";
 import { useTier } from "@/lib/store";
 import { brandColors } from "@/lib/tokens";
@@ -72,15 +72,16 @@ export function ParticleField({
   const pointsRef   = useRef<THREE.Points>(null);
   const clock       = useRef(0);
 
-  // Stores the latest generated particle data (positions used as reset values)
-  const dataRef = useRef<ReturnType<typeof generateParticleData> | null>(null);
-  // Increments each time new data is generated — triggers geometry rebuild
-  const [genId, setGenId] = useState(0);
+  // Particle data in state so useMemo can depend on it without ref reads during render
+  type ParticleData = ReturnType<typeof generateParticleData>;
+  const [particleData, setParticleData] = useState<ParticleData | null>(null);
+  // Ref for animation tick: synced from state via useLayoutEffect (before next RAF)
+  const dataRef = useRef<ParticleData | null>(null);
+  useLayoutEffect(() => { dataRef.current = particleData; }, [particleData]);
 
   // ── Generate particle data in effect (not during render) ────────────────
   useEffect(() => {
-    dataRef.current = generateParticleData(actualCount, directed);
-    setGenId((n) => n + 1); // trigger geometry useMemo
+    setParticleData(generateParticleData(actualCount, directed)); // eslint-disable-line react-hooks/set-state-in-effect
   }, [actualCount, directed]);
 
   // ── Gradient color map — deterministic (no randomness), safe in useMemo ──
@@ -112,18 +113,16 @@ export function ParticleField({
 
   // ── Build geometry imperatively once data is ready ────────────────────
   const geometry = useMemo(() => {
-    if (!dataRef.current) return null;
+    if (!particleData) return null;
     const geo = new THREE.BufferGeometry();
     // Mutable copy of positions for per-frame updates; original kept in dataRef for resets
-    geo.setAttribute("position", new THREE.BufferAttribute(dataRef.current.positions.slice(), 3));
+    geo.setAttribute("position", new THREE.BufferAttribute(particleData.positions.slice(), 3));
     geo.setAttribute("color",    new THREE.BufferAttribute(colors, 3));
     return geo;
-    // genId drives rebuilds when new random data is generated
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [genId, colors]);
+  }, [particleData, colors]);
 
-  // ── Per-frame update — drift + gentle oscillation ─────────────────────
-  useFrame((_, delta) => {
+  // ── P1: particle position writes + geometry needsUpdate ──────────────────
+  useAnimationTick((_, delta) => {
     if (!pointsRef.current || !dataRef.current) return;
     const { velocities, phases, positions: initPos } = dataRef.current;
     clock.current += delta;
@@ -145,7 +144,7 @@ export function ParticleField({
       }
     }
     posAttr.needsUpdate = true;
-  });
+  }, 1);
 
   if (!geometry) return null;
 

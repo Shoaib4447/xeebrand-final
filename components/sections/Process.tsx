@@ -56,6 +56,7 @@ export function Process() {
 
   return (
     <section
+      id="process-section"
       ref={sectionRef}
       className="section-padding relative overflow-hidden"
       style={{ background: "var(--surface-0)" }}

@@ -17,9 +17,17 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
+import dynamic from "next/dynamic";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useTier } from "@/lib/store";
-import type { DeviceTier } from "@/lib/device-tier";
+import { AnimationProvider } from "./AnimatedObject";
+import { CameraRigController } from "@/lib/three/cameraRig";
+
+// Dynamic import — postprocessing library never loads on Tier B/C (zero chunk cost)
+const DOFPass = dynamic(
+  () => import("./DOFPass").then((m) => ({ default: m.DOFPass })),
+  { ssr: false },
+);
 
 interface SceneCanvasProps {
   /** Accessible description of the 3D content — required, no exceptions */
@@ -109,7 +117,14 @@ export function SceneCanvas({
         shadows={tier === "A"}
         style={{ background: "transparent" }}
       >
-        <Suspense fallback={null}>{children}</Suspense>
+        <Suspense fallback={null}>
+            <AnimationProvider>
+              <CameraRigController />
+              {/* DOF: Tier A only — dynamic import keeps postprocessing out of B/C bundles */}
+              {tier === "A" && <DOFPass />}
+              {children}
+            </AnimationProvider>
+          </Suspense>
       </Canvas>
     </div>
   );
