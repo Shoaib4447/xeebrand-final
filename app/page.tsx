@@ -14,13 +14,14 @@
  *   7. Footer       — utility, no animation
  */
 
-import { Hero }         from "@/components/sections/Hero";
-import { ProofStrip }   from "@/components/sections/ProofStrip";
-import { Capabilities } from "@/components/sections/Capabilities";
-import { Process }      from "@/components/sections/Process";
-import { Testimonial }  from "@/components/sections/Testimonial";
-import { CTABlock }     from "@/components/sections/CTABlock";
-import { Footer }       from "@/components/sections/Footer";
+import { Hero }          from "@/components/sections/Hero";
+import { ProofStrip }    from "@/components/sections/ProofStrip";
+import { Capabilities }  from "@/components/sections/Capabilities";
+import { FeaturedWork }  from "@/components/sections/FeaturedWork";
+import { Process }       from "@/components/sections/Process";
+import { Testimonial }   from "@/components/sections/Testimonial";
+import { CTABlock }      from "@/components/sections/CTABlock";
+import { Footer }        from "@/components/sections/Footer";
 
 export default function HomePage() {
   return (
@@ -28,6 +29,7 @@ export default function HomePage() {
       <Hero />
       <ProofStrip />
       <Capabilities />
+      <FeaturedWork />
       <Process />
       <Testimonial />
       <CTABlock />
